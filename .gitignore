@@ -1,0 +1,12 @@
+/upload/
+/bitrix/cache/
+/bitrix/managed_cache/
+/bitrix/stack_cache/
+/bitrix/backup/
+/bitrix/html_pages/
+/bitrix/tmp/
+/bitrix/.settings.php
+/pr.php
+*.log
+.DS_Store
+.idea/
