@@ -9,36 +9,55 @@ if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
 /** @var CBitrixComponent $component */
 
 $this->setFrameMode(true);
+
+$sections = [];
+$sectionUrlTemplate = $arResult["FOLDER"] . $arResult["URL_TEMPLATES"]["section"];
+$currentSectionId = (string)($arResult["VARIABLES"]["SECTION_ID"] ?? "");
+$allUrl = $arResult["FOLDER"] . $arResult["URL_TEMPLATES"]["news"];
+
+if (CModule::IncludeModule("iblock")) {
+    $sectionResult = CIBlockSection::GetList(
+        ["SORT" => "ASC", "NAME" => "ASC"],
+        [
+            "IBLOCK_ID" => $arParams["IBLOCK_ID"],
+            "ACTIVE" => "Y",
+            "GLOBAL_ACTIVE" => "Y",
+            "DEPTH_LEVEL" => 1,
+        ],
+        false,
+        ["ID", "NAME", "CODE"]
+    );
+
+    while ($section = $sectionResult->GetNext()) {
+        $section["SECTION_PAGE_URL"] = str_replace(
+            ["#SECTION_ID#", "#SECTION_CODE#"],
+            [$section["ID"], $section["CODE"]],
+            $sectionUrlTemplate
+        );
+        $sections[] = $section;
+    }
+}
 ?>
 
 <?php
-$APPLICATION->IncludeComponent(
-    "bitrix:catalog.section.list",
-    "news_sections",
-    [
-        "IBLOCK_TYPE" => $arParams["IBLOCK_TYPE"],
-        "IBLOCK_ID" => $arParams["IBLOCK_ID"],
-        "SECTION_ID" => "",
-        "SECTION_CODE" => "",
-        "SECTION_URL" => $arResult["FOLDER"] . $arResult["URL_TEMPLATES"]["section"],
-        "COUNT_ELEMENTS" => "N",
-        "TOP_DEPTH" => "1",
-        "SECTION_FIELDS" => [
-            "ID",
-            "NAME",
-            "CODE",
-        ],
-        "SECTION_USER_FIELDS" => [],
-        "ADD_SECTIONS_CHAIN" => "N",
-        "CACHE_TYPE" => $arParams["CACHE_TYPE"],
-        "CACHE_TIME" => $arParams["CACHE_TIME"],
-        "CACHE_GROUPS" => $arParams["CACHE_GROUPS"],
-        "CURRENT_SECTION_ID" => (string)($arResult["VARIABLES"]["SECTION_ID"] ?? ""),
-        "ALL_URL" => $arResult["FOLDER"] . $arResult["URL_TEMPLATES"]["news"],
-    ],
-    $component,
-    ["HIDE_ICONS" => "Y"]
-);
+if ($sections !== []) {
+    ?>
+    <nav class="news-sections" aria-label="Разделы новостей">
+        <a class="news-sections__link<?= $currentSectionId === "" ? " is-active" : "" ?>" href="<?= htmlspecialcharsbx($allUrl) ?>">
+            Все новости
+        </a>
+
+        <?php foreach ($sections as $section): ?>
+            <a
+                class="news-sections__link<?= (string)$section["ID"] === $currentSectionId ? " is-active" : "" ?>"
+                href="<?= htmlspecialcharsbx($section["SECTION_PAGE_URL"]) ?>"
+            >
+                <?= htmlspecialcharsbx($section["NAME"]) ?>
+            </a>
+        <?php endforeach; ?>
+    </nav>
+    <?php
+}
 
 $APPLICATION->IncludeComponent(
     "bitrix:news.list",
